@@ -121,7 +121,7 @@
   </div>
   <div class="credits">
     <div>© <a href="https://www.jakoblacour.com" target="_blank" rel="noopener noreferrer">Jakob la Cour Studio</a> 2014-<span id="yr"></span></div>
-    <div class="ver">Remastered: 260614-1631</div>
+    <div>Remastered: <span class="ver">260614-1748</span></div>
   </div>
 </section>
 
@@ -234,15 +234,12 @@ function renderLangPick(){ /* no picker while single-language */ }
 /* ---------------- PILOT ---------------- */
 let peer, conn;
 
-/* ICE servers. STUN finds a direct path; TURN relays the traffic when the network blocks
-   a direct connection (mobile/4G carrier-NAT, strict Wi-Fi). The public Open Relay below works
-   for testing but can be rate-limited — for the performance, replace the turn: entries with your
-   own credentials (free account at metered.ca, or a self-hosted coturn). */
+/* ICE servers. STUN is enough when the pilot and avatar are on the SAME network.
+   To support different networks later (e.g. mobile/4G), add a working TURN server here —
+   a self-hosted coturn, or credentials from a free metered.ca account:
+     { urls: "turn:YOUR.HOST:3478", username: "...", credential: "..." }  */
 const ICE = { iceServers: [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
-  { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
-  { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
+  { urls: "stun:stun.l.google.com:19302" }
 ]};
 function goFS(){
   const el = document.documentElement;

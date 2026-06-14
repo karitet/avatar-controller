@@ -12,10 +12,12 @@ as possible, and documented so it can be rebuilt from this file.
 - **Pairing by a 6-digit code + QR.** The pilot shows a short numeric code and a QR. The avatar
   scans the QR with the phone camera (or types the code) and connects. Auto-retries if a code is taken.
 - **Peer-to-peer commands.** Once paired, commands travel device-to-device over WebRTC (via PeerJS).
+- **Same network for now.** STUN-only — works when pilot and avatar share a network (the same Wi-Fi,
+  or a phone hotspot). Crossing *different* networks (e.g. mobile/4G) needs a TURN server; see below.
 - **Voice cues from recorded files** with a speech-synthesis fallback. The wearer hears each command.
 - **English only** right now (kept simple). The structure stays multilingual — easy to re-add languages.
 - **Works in portrait and landscape.** The controller reflows: stacked upright, wide gamepad on its side.
-  Nothing is force-locked or cropped. An optional **Fuldskærm** button is on the controller.
+  Nothing is force-locked or cropped. An optional **Fullscreen** button is on the controller.
 - **Installable PWA** with offline app + audio caching.
 
 ## The voice
@@ -87,7 +89,7 @@ python3 -m http.server 8000
 ```
 
 Quick desktop check: open as **Pilot**, note the code, open a second tab as **Avatar**, enter the
-code → **Forbind** → **Tryk når du er klar** → press a button in the pilot tab; the avatar tab speaks it.
+code → **Connect** → **Tap when you're ready** → press a button in the pilot tab; the avatar tab speaks it.
 Phone-to-phone QR scanning needs the `https` deploy below.
 
 ## Deploy
@@ -97,10 +99,11 @@ Put a QR to the URL in the publication. Anyone can fork and self-host their own 
 
 ## Harden before live performance
 
-- **TURN server** is wired in (`ICE` config in `index.html`). It relays traffic when a direct
-  connection fails — required on mobile/4G (carrier-NAT) and strict Wi-Fi. A free public Open Relay
-  is used by default for testing; for the performance, replace the `turn:` entries with your own
-  credentials (free account at metered.ca, ~5–20 GB/mo, or a self-hosted coturn).
+- **TURN server for different networks.** By default the app is **STUN-only** and works when both
+  phones are on the same network. To run the pilot and avatar on *different* networks (mobile/4G,
+  where carrier-NAT blocks direct P2P), add a TURN relay at the marked `ICE` block in `index.html` —
+  a self-hosted coturn, or credentials from a free metered.ca account. There is no serverless way
+  around carrier-NAT: a relay is required for cross-network play.
 - **Self-host the PeerJS broker** so pairing doesn't depend on a public service.
 - **Reconnect logic** if a device drops mid-game.
 - **Live voice** option: a WebRTC audio track so the pilot can speak directly to the earpiece.
