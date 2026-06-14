@@ -164,7 +164,7 @@
     <h1 style="margin-top:6px;">AVATAR</h1>
     <p class="sub" style="margin-top:6px;">Scan pilotens QR med kameraet — eller indtast koden her.</p>
     <p class="label">Pilotens kode</p>
-    <input id="joinId" placeholder="f.eks. 7fa3c1" autocapitalize="off" autocomplete="off">
+    <input id="joinId" placeholder="f.eks. 123 456" inputmode="numeric" autocapitalize="off" autocomplete="off">
     <p class="label">Stemme</p>
     <select id="lang">
       <option value="da">Dansk</option>
@@ -211,12 +211,14 @@ const show = id => { document.querySelectorAll(".screen").forEach(s=>s.classList
 
 /* ---------------- PILOT ---------------- */
 let peer, conn;
-function startPilot(){
+function startPilot(tries){
+  tries = tries || 0;
   show("pilotPair");
-  peer = new Peer();
+  const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+  peer = new Peer(code);
   peer.on("open", id => {
-    $("roomId").textContent = id.slice(0,12);
-    const url = location.origin + location.pathname + "?join=" + encodeURIComponent(id);
+    $("roomId").textContent = id.replace(/(\d{3})(\d{3})/, "$1 $2"); // shown as "123 456"
+    const url = location.origin + location.pathname + "?join=" + id;
     renderQR(url);
     setStat(["pDot"],["pStat"],"wait","venter på avatar…");
   });
@@ -225,7 +227,10 @@ function startPilot(){
     conn.on("open", () => { show("pilotPlay"); setStat(["pDot2"],["pStat2"],"on","forbundet"); });
     conn.on("close", () => setStat(["pDot2"],["pStat2"],"","afbrudt"));
   });
-  peer.on("error", e => { $("pErr").textContent = "Forbindelsesfejl: " + e.type; });
+  peer.on("error", e => {
+    if(e.type === "unavailable-id" && tries < 6){ try{ peer.destroy(); }catch(_){} startPilot(tries + 1); return; }
+    $("pErr").textContent = "Forbindelsesfejl: " + e.type;
+  });
 }
 function renderQR(text){
   const qr = qrcode(0, "M");
@@ -251,7 +256,7 @@ const audioCache = {};
 function startAvatarManual(){ show("avatarJoin"); }
 
 function avatarJoin(id){
-  id = (id||"").trim();
+  id = (id||"").replace(/\s+/g, ""); // accept "123 456" or "123456"
   if(!id){ $("aErr").textContent = "Indtast eller scan en kode."; return; }
   lang = ($("lang") && $("lang").value) || "da";
   show("avatarReady");
@@ -263,7 +268,10 @@ function avatarJoin(id){
     aconn.on("data", onCmd);
     aconn.on("close", () => setStat(["aDot"],["aStat"],"","afbrudt"));
   });
-  apeer.on("error", e => { setStat(["aDot0"],["aStat0"],"","fejl: " + e.type); });
+  apeer.on("error", e => {
+    const msg = e.type === "peer-unavailable" ? "Ingen pilot fundet med den kode" : "fejl: " + e.type;
+    setStat(["aDot0"],["aStat0"],"", msg);
+  });
 }
 
 function avatarStart(){
