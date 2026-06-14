@@ -1,14 +1,49 @@
-# Avatar Controller — system & protocol
+# Avatar Controller
 
 A peer-to-peer pilot/avatar controller for *Avatar Controller Maze* (Jakob la Cour Studio).
-A working reference, built on plain web standards so it rots as slowly as possible and can be
-rebuilt from the spec below.
+One phone (the **pilot**) sends movement and action commands to another phone (the **avatar**),
+which speaks them into the wearer's earphones. Built on plain web standards so it rots as slowly
+as possible, and documented so it can be rebuilt from this file.
 
-## The principle: durable vs perishable
+**Live:** https://karitet.github.io/avatar-controller/
 
-- **Durable** (lives on paper / in the publication): the concept, the rules, the mask and
-  costume, and the command vocabulary below. If the code dies, the work rebuilds from this.
-- **Perishable** (this code): one implementation. Documented so a technical partner can replace it.
+## What's in this version (overview)
+
+- **Pairing by a 6-digit code + QR.** The pilot shows a short numeric code and a QR. The avatar
+  scans the QR with the phone camera (or types the code) and connects. Auto-retries if a code is taken.
+- **Peer-to-peer commands.** Once paired, commands travel device-to-device over WebRTC (via PeerJS).
+- **Voice cues from recorded files** with a speech-synthesis fallback. The wearer hears each command.
+- **English only** right now (kept simple). The structure stays multilingual — easy to re-add languages.
+- **Works in portrait and landscape.** The controller reflows: stacked upright, wide gamepad on its side.
+  Nothing is force-locked or cropped. An optional **Fuldskærm** button is on the controller.
+- **Installable PWA** with offline app + audio caching.
+
+## The voice
+
+The command cues were generated with **espeak-ng** (eSpeak NG) — a free, open-source, *offline*
+text-to-speech engine (version 1.51), English voice `en-us`, then encoded to MP3 with ffmpeg.
+Its slightly synthetic, machine-like character suits a piece about being remote-controlled, and
+because it runs locally there's no account, API key, or external service to depend on.
+
+Regenerate or extend the voice with one command:
+
+```bash
+# offline, same espeak voice (needs espeak-ng + ffmpeg):
+python3 make_audio.py --engine espeak --langs en
+
+# or a produced voice via ElevenLabs (needs an API key):
+export ELEVENLABS_API_KEY=sk_...
+python3 make_audio.py --engine elevenlabs --voice <VOICE_ID> --langs en
+```
+
+Add a language: add a row to `WORDS` in `make_audio.py`, run it, and add the language back to
+`LANGS` in `index.html`. Nothing else changes.
+
+## Durable vs perishable
+
+- **Durable** (belongs on paper / in the publication): the concept, rules, mask, costume, and the
+  command vocabulary below. If the code dies, the work rebuilds from this.
+- **Perishable**: this code — one implementation, documented so a technical partner can replace it.
 
 ## Architecture
 
@@ -16,25 +51,17 @@ rebuilt from the spec below.
    PILOT device                                   AVATAR device
    (phone/tablet)                                 (phone in pocket + earphones)
    ┌──────────────┐      WebRTC data (P2P)         ┌──────────────┐
-   │  joypad UI   │  ───── commands ──────────▶    │ speaks / plays│
-   │  + QR pair   │                                │ the cue       │
+   │  joypad UI   │  ───── commands ──────────▶    │ speaks the    │
+   │  + QR / code │                                │ instruction   │
    └──────────────┘                                └──────────────┘
           │                                               │
-          └──── pairing: avatar scans pilot's QR ─────────┘
-                (broker sets up the call; commands stay P2P)
+          └──── avatar scans the pilot's QR (or types the code) ───┘
+                (a broker introduces them; commands stay P2P)
 ```
 
-- **Transport:** WebRTC data channel (via PeerJS), device-to-device. Command traffic is not relayed.
-- **Pairing:** the pilot shows a QR code that is a deep link (`…/?join=<peerId>`). The avatar
-  scans it with the phone camera, the app opens already connecting. Manual code entry is the fallback.
-- **No app store, no build step.** Two small vendored libraries (PeerJS, qrcode-generator) ship in `vendor/`.
-
-### The one external dependency, and how to remove it
-
-Pairing needs a rendezvous point. By default PeerJS uses its public broker (`0.peerjs.com`).
-That is the only thing here you don't control. It is replaceable: run your own one-line
-`peerjs-server` (npm) and point `new Peer(id, {host, port})` at it. The broker only introduces
-the two devices — once connected, commands flow directly between them.
+The only external dependency is the rendezvous broker that introduces the two devices
+(PeerJS' public `0.peerjs.com` by default). It's replaceable: run your own one-line `peerjs-server`
+and point `new Peer()` at it. Once connected, commands flow directly between the two phones.
 
 ## Command protocol
 
@@ -45,38 +72,9 @@ Pilot → avatar, JSON over the data channel:
 ```
 
 `c` ∈ `forward, backward, left, right, stop, shoot, pickup`. `ts` = sender epoch-ms.
+The pilot also sends `{ "t": "lang", "l": "en" }` on connect so the avatar speaks the right language.
 
-On receipt the avatar device plays `audio/<lang>/<command>.mp3` (falling back to the browser's
-speech synthesis if a file is missing) and buzzes. Spoken words per language:
-
-| command  | da        | en        |
-|----------|-----------|-----------|
-| forward  | frem      | forward   |
-| backward | tilbage   | backward  |
-| left     | venstre   | left      |
-| right    | højre     | right     |
-| stop     | stop      | stop      |
-| shoot    | skyd      | shoot     |
-| pickup   | saml op   | pick up   |
-
-## Audio
-
-The cues in `audio/da` and `audio/en` are **placeholders** generated offline with espeak-ng —
-robotic on purpose. Replace them with a real voice for the finished work; browser TTS quality
-(especially Danish on iOS) is inconsistent and not yours to control.
-
-`make_audio.py` regenerates the whole set from one word list:
-
-```bash
-# offline placeholders (needs espeak-ng + ffmpeg):
-python3 make_audio.py --engine espeak --langs da en
-
-# final voice via ElevenLabs (needs an API key):
-export ELEVENLABS_API_KEY=sk_...
-python3 make_audio.py --engine elevenlabs --voice <VOICE_ID> --langs da en
-```
-
-Add a language or change a word: edit `WORDS` in `make_audio.py`, re-run. The app needs no change.
+On receipt the avatar plays `audio/<lang>/<command>.mp3` (falling back to speech synthesis) and buzzes.
 
 ## Run / test locally
 
@@ -85,17 +83,17 @@ WebRTC, the camera, and service workers need a secure context (`https://` or `lo
 ```bash
 cd avatar-controller
 python3 -m http.server 8000
-# open http://localhost:8000 on two devices/tabs
+# open http://localhost:8000 in two tabs/devices
 ```
 
-Pilot on one device shows a QR. Avatar scans it (or enters the code) → hears commands.
-For phone-to-phone scanning you need an `https` URL (deploy first, below).
+Quick desktop check: open as **Pilot**, note the code, open a second tab as **Avatar**, enter the
+code → **Forbind** → **Tryk når du er klar** → press a button in the pilot tab; the avatar tab speaks it.
+Phone-to-phone QR scanning needs the `https` deploy below.
 
-## Deploy (for a release)
+## Deploy
 
-Static host the folder — files never change, hosting is near-eternal and free: GitHub Pages,
-Netlify, Codeberg Pages, an institution's web space. Put a QR to that URL in the publication.
-Anyone can fork and self-host their own instance.
+Static-host the folder (GitHub Pages, Netlify, …) — files never change, hosting is near-eternal.
+Put a QR to the URL in the publication. Anyone can fork and self-host their own instance.
 
 ## Harden before live performance
 
@@ -106,13 +104,13 @@ Anyone can fork and self-host their own instance.
 
 ## Files
 
-| file                    | role                                                  |
-|-------------------------|-------------------------------------------------------|
-| `index.html`            | the whole app — pilot + avatar, UI, WebRTC, QR        |
-| `vendor/peerjs.min.js`  | WebRTC signaling + data channel (MIT)                 |
-| `vendor/qrcode.js`      | QR generation (MIT)                                   |
-| `audio/<lang>/*.mp3`    | command cues (placeholder voice — replace)            |
-| `make_audio.py`         | regenerate cues (ElevenLabs or espeak)                |
-| `manifest.webmanifest`  | installable as a PWA                                  |
-| `sw.js`                 | offline cache of app + audio                          |
-| `icon.svg`              | the green aperture-cube mark                          |
+| file                    | role                                              |
+|-------------------------|---------------------------------------------------|
+| `index.html`            | the whole app — pilot + avatar, UI, WebRTC, QR    |
+| `vendor/peerjs.min.js`  | WebRTC signaling + data channel (MIT)             |
+| `vendor/qrcode.js`      | QR generation (MIT)                               |
+| `audio/<lang>/*.mp3`    | command cues (espeak-ng voice — replaceable)      |
+| `make_audio.py`         | regenerate cues (espeak or ElevenLabs)            |
+| `manifest.webmanifest`  | installable as a PWA                              |
+| `sw.js`                 | offline cache of app + audio                      |
+| `icon.svg`              | the green aperture-cube mark                      |
