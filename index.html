@@ -226,6 +226,17 @@ function renderLangPick(){ /* no picker while single-language */ }
 
 /* ---------------- PILOT ---------------- */
 let peer, conn;
+
+/* ICE servers. STUN finds a direct path; TURN relays the traffic when the network blocks
+   a direct connection (mobile/4G carrier-NAT, strict Wi-Fi). The public Open Relay below works
+   for testing but can be rate-limited — for the performance, replace the turn: entries with your
+   own credentials (free account at metered.ca, or a self-hosted coturn). */
+const ICE = { iceServers: [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
+]};
 function goFS(){
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
@@ -236,7 +247,7 @@ function startPilot(tries){
   tries = tries || 0;
   show("pilotPair");
   const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
-  peer = new Peer(code);
+  peer = new Peer(code, { config: ICE });
   peer.on("open", id => {
     $("roomId").textContent = id.replace(/(\d{3})(\d{3})/, "$1 $2"); // shown as "123 456"
     const url = location.origin + location.pathname + "?join=" + id + "&lang=" + lang;
@@ -284,7 +295,7 @@ function avatarJoin(id){
   if(!id){ $("aErr").textContent = "Enter or scan a code."; return; }
   show("avatarReady");
   setStat(["aDot0"],["aStat0"],"wait","connecting…");
-  apeer = new Peer();
+  apeer = new Peer(undefined, { config: ICE });
   apeer.on("open", () => {
     aconn = apeer.connect(id, { reliable:true });
     aconn.on("open", () => setStat(["aDot0"],["aStat0"],"on","connected — tap ready"));

@@ -97,7 +97,10 @@ Put a QR to the URL in the publication. Anyone can fork and self-host their own 
 
 ## Harden before live performance
 
-- **TURN server** for restrictive Wi-Fi where direct P2P fails (e.g. coturn).
+- **TURN server** is wired in (`ICE` config in `index.html`). It relays traffic when a direct
+  connection fails — required on mobile/4G (carrier-NAT) and strict Wi-Fi. A free public Open Relay
+  is used by default for testing; for the performance, replace the `turn:` entries with your own
+  credentials (free account at metered.ca, ~5–20 GB/mo, or a self-hosted coturn).
 - **Self-host the PeerJS broker** so pairing doesn't depend on a public service.
 - **Reconnect logic** if a device drops mid-game.
 - **Live voice** option: a WebRTC audio track so the pilot can speak directly to the earpiece.
