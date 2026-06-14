@@ -90,6 +90,9 @@
   .startbtn{padding:20px 40px; border-radius:16px; background:#10260f; border:.5px solid #2f6d2f; color:var(--green-dim); font-size:18px; letter-spacing:.06em;}
   select{background:var(--surface); color:var(--txt); border:.5px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:13px;}
   .muted-link{color:var(--muted); font-size:12px; text-decoration:underline;}
+  .credits{text-align:center; padding:12px 0 6px; font-size:9px; letter-spacing:.04em; color:#5b6068; line-height:2;}
+  .credits a{color:#6b7078; text-decoration:underline; text-underline-offset:2px;}
+  .credits .ver{font-family:ui-monospace,Menlo,monospace; color:#474c53;}
 </style>
 </head>
 <body>
@@ -115,6 +118,10 @@
       <div style="text-align:left"><div>Avatar</div><div class="sub">scan the pilot’s QR, or enter a code</div></div>
     </button>
     <p class="sub" style="margin-top:22px; line-height:1.6;">The avatar scans the pilot’s QR with the phone camera. The commands travel peer-to-peer.</p>
+  </div>
+  <div class="credits">
+    <div>© <a href="https://www.jakoblacour.com" target="_blank" rel="noopener noreferrer">Jakob la Cour Studio</a> 2014-<span id="yr"></span></div>
+    <div class="ver">Remastered: 260614-1622</div>
   </div>
 </section>
 
@@ -379,6 +386,9 @@ function setStat(dots, stats, cls, txt){
 if("serviceWorker" in navigator){
   window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
+
+/* keep the © range current with no maintenance */
+(function(){ const y = $("yr"); if(y) y.textContent = new Date().getFullYear(); })();
 </script>
 </body>
 </html>
