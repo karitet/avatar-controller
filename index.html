@@ -39,6 +39,9 @@
     color:var(--txt); font-size:14px; letter-spacing:.04em; text-align:center; transition:transform .05s;}
   .btn:active{transform:scale(.97);}
   .btn.go{background:#10260f; border-color:#2f6d2f; color:var(--green-dim);}
+  .langpick{display:flex; gap:10px; margin-top:8px;}
+  .langbtn{flex:1; padding:13px; border-radius:10px; background:var(--surface); border:.5px solid var(--line); color:var(--muted); font-size:14px; letter-spacing:.04em;}
+  .langbtn.on{background:#10260f; border-color:#2f6d2f; color:var(--green-dim);}
   .label{font-size:11px; letter-spacing:.1em; color:var(--muted); margin:18px 0 0;}
   .status{display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.05em; color:var(--muted);}
   .dot{width:9px; height:9px; border-radius:50%; background:#444; flex:0 0 9px;}
@@ -101,8 +104,10 @@
         <line x1="6" y1="94" x2="35" y2="65" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="94" x2="65" y2="65" stroke="#0a0a0a" stroke-width="7"/>
         <rect x="35" y="35" width="30" height="30" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
       </svg>
-      <div><h1>AVATAR CONTROLLER</h1><div class="sub">vælg din rolle</div></div>
+      <div><h1>AVATAR CONTROLLER</h1><div class="sub">vælg sprog og rolle</div></div>
     </div>
+    <p class="label" style="margin-top:20px;">Sprog / Language</p>
+    <div id="langPick" class="langpick"></div>
     <button class="big" onclick="goFS(); startPilot()">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#cfd3d9" stroke-width="1.6"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>
       <div style="text-align:left"><div>Pilot</div><div class="sub">styrer avataren · viser QR</div></div>
@@ -178,12 +183,8 @@
     <p class="sub" style="margin-top:6px;">Scan pilotens QR med kameraet — eller indtast koden her.</p>
     <p class="label">Pilotens kode</p>
     <input id="joinId" placeholder="f.eks. 123 456" inputmode="numeric" autocapitalize="off" autocomplete="off">
-    <p class="label">Stemme</p>
-    <select id="lang">
-      <option value="da">Dansk</option>
-      <option value="en">English</option>
-    </select>
     <div class="row"><button class="btn go" onclick="avatarJoin($('joinId').value)">Forbind</button></div>
+    <p class="sub" style="margin-top:14px;">Sproget bestemmes af piloten.</p>
     <div class="err" id="aErr"></div>
   </div>
 </section>
@@ -222,6 +223,29 @@
 const $ = id => document.getElementById(id);
 const show = id => { document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); };
 
+/* ---------------- language: one choice from the start; pilot is the source of truth ---------------- */
+const LANGS = [ {code:"da", label:"Dansk"}, {code:"en", label:"English"} ]; // add a row + an audio/<code>/ folder + a SPEAK[<code>] block to extend
+let lang = localStorage.getItem("acm_lang") || "da";
+function setLang(code){
+  if(!code) return;
+  lang = code;
+  try{ localStorage.setItem("acm_lang", code); }catch(_){}
+  document.querySelectorAll("#langPick button").forEach(b => b.classList.toggle("on", b.dataset.code === code));
+}
+function renderLangPick(){
+  const el = $("langPick"); if(!el) return;
+  el.innerHTML = "";
+  LANGS.forEach(L => {
+    const b = document.createElement("button");
+    b.className = "langbtn" + (L.code === lang ? " on" : "");
+    b.dataset.code = L.code;
+    b.textContent = L.label;
+    b.onclick = () => setLang(L.code);
+    el.appendChild(b);
+  });
+}
+renderLangPick();
+
 /* ---------------- PILOT ---------------- */
 let peer, conn;
 function goFS(){
@@ -237,13 +261,16 @@ function startPilot(tries){
   peer = new Peer(code);
   peer.on("open", id => {
     $("roomId").textContent = id.replace(/(\d{3})(\d{3})/, "$1 $2"); // shown as "123 456"
-    const url = location.origin + location.pathname + "?join=" + id;
+    const url = location.origin + location.pathname + "?join=" + id + "&lang=" + lang;
     renderQR(url);
     setStat(["pDot"],["pStat"],"wait","venter på avatar…");
   });
   peer.on("connection", c => {
     conn = c;
-    conn.on("open", () => { show("pilotPlay"); setStat(["pDot2"],["pStat2"],"on","forbundet"); });
+    conn.on("open", () => {
+      conn.send({ t:"lang", l:lang });            // tell the avatar which language to speak
+      show("pilotPlay"); setStat(["pDot2"],["pStat2"],"on","forbundet");
+    });
     conn.on("close", () => setStat(["pDot2"],["pStat2"],"","afbrudt"));
   });
   peer.on("error", e => {
@@ -269,7 +296,7 @@ function send(cmd){
 }
 
 /* ---------------- AVATAR ---------------- */
-let apeer, aconn, lang = "da", audioUnlocked = false;
+let apeer, aconn, audioUnlocked = false;
 const audioCache = {};
 
 function startAvatarManual(){ show("avatarJoin"); }
@@ -277,20 +304,25 @@ function startAvatarManual(){ show("avatarJoin"); }
 function avatarJoin(id){
   id = (id||"").replace(/\s+/g, ""); // accept "123 456" or "123456"
   if(!id){ $("aErr").textContent = "Indtast eller scan en kode."; return; }
-  lang = ($("lang") && $("lang").value) || "da";
   show("avatarReady");
   setStat(["aDot0"],["aStat0"],"wait","forbinder…");
   apeer = new Peer();
   apeer.on("open", () => {
     aconn = apeer.connect(id, { reliable:true });
     aconn.on("open", () => setStat(["aDot0"],["aStat0"],"on","forbundet — tryk klar"));
-    aconn.on("data", onCmd);
+    aconn.on("data", onData);
     aconn.on("close", () => setStat(["aDot"],["aStat"],"","afbrudt"));
   });
   apeer.on("error", e => {
     const msg = e.type === "peer-unavailable" ? "Ingen pilot fundet med den kode" : "fejl: " + e.type;
     setStat(["aDot0"],["aStat0"],"", msg);
   });
+}
+
+function onData(m){
+  if(!m) return;
+  if(m.t === "lang"){ setLang(m.l); return; }   // pilot sets the language
+  if(m.t === "cmd"){ onCmd(m); }
 }
 
 function avatarStart(){
@@ -304,10 +336,11 @@ function unlockAudio(){
   audioUnlocked = true;
   // prime each clip silently so playback is instant + iOS-unlocked
   ["forward","backward","left","right","stop","shoot","pickup"].forEach(c=>{
-    const a = new Audio(`audio/${lang}/${c}.mp3`);
+    const key = lang + "/" + c;
+    const a = new Audio(`audio/${key}.mp3`);
     a.preload = "auto"; a.volume = 0;
     a.play().then(()=>{ a.pause(); a.currentTime = 0; a.volume = 1; }).catch(()=>{});
-    audioCache[c] = a;
+    audioCache[key] = a;
   });
   try{ const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); }catch(_){}
 }
@@ -326,8 +359,9 @@ function onCmd(m){
 }
 function cue(cmd, word){
   // prefer the recorded file; fall back to speech synthesis
-  const a = audioCache[cmd] || new Audio(`audio/${lang}/${cmd}.mp3`);
-  audioCache[cmd] = a;
+  const key = lang + "/" + cmd;
+  const a = audioCache[key] || new Audio(`audio/${key}.mp3`);
+  audioCache[key] = a;
   a.currentTime = 0;
   a.play().catch(()=>speak(word));
 }
@@ -348,8 +382,7 @@ function setStat(dots, stats, cls, txt){
   const p = new URLSearchParams(location.search);
   const join = p.get("join");
   if(join){
-    lang = (p.get("lang")) || "da";
-    // jump straight to connecting as avatar
+    setLang(p.get("lang"));   // language carried in the QR
     avatarJoin(join);
   }
 })();
