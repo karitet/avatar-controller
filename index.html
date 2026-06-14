@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
@@ -71,14 +71,14 @@
     .play{flex-direction:row; justify-content:space-evenly; gap:20px; padding:14px 24px;}
     .dpad{width:248px; max-width:248px; grid-template-rows:repeat(3,72px);}
   }
-  .act{display:flex; flex-direction:column; align-items:center; gap:6px; flex:1;}
-  .orb{width:100%; aspect-ratio:1; max-width:84px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:transform .05s;}
+  .act{display:flex; flex-direction:column; align-items:center; gap:8px; flex:0 0 auto;}
+  .orb{width:84px; height:84px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:transform .05s;}
   .orb:active{transform:scale(.94);}
-  .orb svg{width:32px; height:32px;}
-  .act .t{font-size:10px; letter-spacing:.08em; color:var(--muted);}
+  .orb svg{width:38px; height:38px;}
+  .act .t{font-size:11px; letter-spacing:.08em; color:var(--muted);}
   .orb.shoot{background:#2a2110; border:.5px solid #7a5a1c;} .orb.shoot svg{stroke:var(--amber);}
   .orb.pick{background:#122312; border:.5px solid #2f6d2f;} .orb.pick svg{stroke:var(--green-dim);}
-  .orb.stop{background:#2a1416; border:1px solid #8a3030; max-width:96px;} .orb.stop svg{stroke:var(--red);}
+  .orb.stop{background:#2a1416; border:1px solid #8a3030; width:100px; height:100px;} .orb.stop svg{stroke:var(--red);}
   .sep{width:.5px; align-self:stretch; background:var(--line); margin:14px 2px;}
 
   /* avatar receiver */
@@ -104,29 +104,29 @@
         <line x1="6" y1="94" x2="35" y2="65" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="94" x2="65" y2="65" stroke="#0a0a0a" stroke-width="7"/>
         <rect x="35" y="35" width="30" height="30" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
       </svg>
-      <div><h1>AVATAR CONTROLLER</h1><div class="sub">vælg din rolle</div></div>
+      <div><h1>AVATAR CONTROLLER</h1><div class="sub">choose your role</div></div>
     </div>
     <button class="big" onclick="startPilot()">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#cfd3d9" stroke-width="1.6"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>
-      <div style="text-align:left"><div>Pilot</div><div class="sub">styrer avataren · viser QR</div></div>
+      <div style="text-align:left"><div>Pilot</div><div class="sub">controls the avatar · shows QR</div></div>
     </button>
     <button class="big" onclick="startAvatarManual()">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#cfd3d9" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="1.5"/><path d="M5 5l4.5 4.5M19 5l-4.5 4.5M5 19l4.5-4.5M19 19l-4.5-4.5"/><rect x="9.5" y="9.5" width="5" height="5"/></svg>
-      <div style="text-align:left"><div>Avatar</div><div class="sub">scan pilotens QR, eller indtast kode</div></div>
+      <div style="text-align:left"><div>Avatar</div><div class="sub">scan the pilot’s QR, or enter a code</div></div>
     </button>
-    <p class="sub" style="margin-top:22px; line-height:1.6;">Avataren scanner pilotens QR med telefonens kamera. Selve kommandoerne går peer-to-peer.</p>
+    <p class="sub" style="margin-top:22px; line-height:1.6;">The avatar scans the pilot’s QR with the phone camera. The commands travel peer-to-peer.</p>
   </div>
 </section>
 
 <!-- PILOT: QR -->
 <section id="pilotPair" class="screen pad">
   <div style="max-width:440px; margin:0 auto; width:100%;">
-    <div class="status"><span class="dot wait" id="pDot"></span><span id="pStat">opretter rum…</span></div>
+    <div class="status"><span class="dot wait" id="pDot"></span><span id="pStat">creating room…</span></div>
     <h1 style="margin-top:14px;">PILOT</h1>
-    <p class="sub" style="margin-top:6px;">Lad avataren scanne denne kode.</p>
+    <p class="sub" style="margin-top:6px;">Have the avatar scan this code.</p>
     <div class="qrwrap">
       <div id="qrBox"></div>
-      <div class="roomid">kode: <span id="roomId">…</span></div>
+      <div class="roomid">code: <span id="roomId">…</span></div>
     </div>
     <div class="err" id="pErr"></div>
   </div>
@@ -145,8 +145,8 @@
       <div><div style="font-size:12px; letter-spacing:.12em;">PILOT</div><div class="sub" id="lastSent">—</div></div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="fsbtn" onclick="goFS()"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Fuldskærm</button>
-      <div class="status"><span class="dot on" id="pDot2"></span><span id="pStat2">forbundet</span></div>
+      <button class="fsbtn" onclick="goFS()"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Fullscreen</button>
+      <div class="status"><span class="dot on" id="pDot2"></span><span id="pStat2">connected</span></div>
     </div>
   </div>
   <div class="play">
@@ -174,10 +174,10 @@
 <section id="avatarJoin" class="screen pad">
   <div style="max-width:440px; margin:0 auto; width:100%;">
     <h1 style="margin-top:6px;">AVATAR</h1>
-    <p class="sub" style="margin-top:6px;">Scan pilotens QR med kameraet — eller indtast koden her.</p>
-    <p class="label">Pilotens kode</p>
-    <input id="joinId" placeholder="f.eks. 123 456" inputmode="numeric" autocapitalize="off" autocomplete="off">
-    <div class="row"><button class="btn go" onclick="avatarJoin($('joinId').value)">Forbind</button></div>
+    <p class="sub" style="margin-top:6px;">Scan the pilot’s QR with the camera — or enter the code here.</p>
+    <p class="label">Pilot code</p>
+    <input id="joinId" placeholder="e.g. 123 456" inputmode="numeric" autocapitalize="off" autocomplete="off">
+    <div class="row"><button class="btn go" onclick="avatarJoin($('joinId').value)">Connect</button></div>
     <div class="err" id="aErr"></div>
   </div>
 </section>
@@ -185,17 +185,17 @@
 <!-- AVATAR: READY GATE (unlock audio) -->
 <section id="avatarReady" class="screen">
   <div class="ready">
-    <div class="status"><span class="dot wait" id="aDot0"></span><span id="aStat0">forbinder…</span></div>
-    <button class="startbtn" onclick="avatarStart()">Tryk når du er klar</button>
-    <p class="sub" style="max-width:260px;">Sæt øretelefoner i først. Tryk for at aktivere lyd.</p>
+    <div class="status"><span class="dot wait" id="aDot0"></span><span id="aStat0">connecting…</span></div>
+    <button class="startbtn" onclick="avatarStart()">Tap when you’re ready</button>
+    <p class="sub" style="max-width:260px;">Put earphones in first. Tap to enable sound.</p>
   </div>
 </section>
 
 <!-- AVATAR: RECEIVER -->
 <section id="avatarRecv" class="screen">
   <div class="top">
-    <div class="topleft"><span class="dot on" id="aDot"></span><span class="status" id="aStat">forbundet</span></div>
-    <button class="muted-link" onclick="testCue()">test lyd</button>
+    <div class="topleft"><span class="dot on" id="aDot"></span><span class="status" id="aStat">connected</span></div>
+    <button class="muted-link" onclick="testCue()">test sound</button>
   </div>
   <div class="recv">
     <svg id="aEmblem" class="flash" width="120" height="120" viewBox="0 0 100 100" aria-hidden="true">
@@ -204,8 +204,8 @@
       <line x1="6" y1="94" x2="35" y2="65" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="94" x2="65" y2="65" stroke="#0a0a0a" stroke-width="7"/>
       <rect x="35" y="35" width="30" height="30" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
     </svg>
-    <div class="cmd" id="aCmd">venter…</div>
-    <div class="hint">Hold telefonen i lommen med øretelefoner i. Du hører instruktionerne og handler på dem.</div>
+    <div class="cmd" id="aCmd">waiting…</div>
+    <div class="hint">Keep the phone in your pocket with earphones in. You’ll hear the instructions and act on them.</div>
   </div>
 </section>
 
@@ -241,19 +241,19 @@ function startPilot(tries){
     $("roomId").textContent = id.replace(/(\d{3})(\d{3})/, "$1 $2"); // shown as "123 456"
     const url = location.origin + location.pathname + "?join=" + id + "&lang=" + lang;
     renderQR(url);
-    setStat(["pDot"],["pStat"],"wait","venter på avatar…");
+    setStat(["pDot"],["pStat"],"wait","waiting for avatar…");
   });
   peer.on("connection", c => {
     conn = c;
     conn.on("open", () => {
       conn.send({ t:"lang", l:lang });            // tell the avatar which language to speak
-      show("pilotPlay"); setStat(["pDot2"],["pStat2"],"on","forbundet");
+      show("pilotPlay"); setStat(["pDot2"],["pStat2"],"on","connected");
     });
-    conn.on("close", () => setStat(["pDot2"],["pStat2"],"","afbrudt"));
+    conn.on("close", () => setStat(["pDot2"],["pStat2"],"","disconnected"));
   });
   peer.on("error", e => {
     if(e.type === "unavailable-id" && tries < 6){ try{ peer.destroy(); }catch(_){} startPilot(tries + 1); return; }
-    $("pErr").textContent = "Forbindelsesfejl: " + e.type;
+    $("pErr").textContent = "Connection error: " + e.type;
   });
 }
 function renderQR(text){
@@ -269,7 +269,7 @@ function send(cmd){
   if(now - lastTs < 60) return;
   lastTs = now;
   conn.send({ t:"cmd", c:cmd, ts:now });
-  $("lastSent").textContent = "sendt: " + cmd;
+  $("lastSent").textContent = "sent: " + cmd;
   if(navigator.vibrate) navigator.vibrate(12);
 }
 
@@ -281,18 +281,18 @@ function startAvatarManual(){ show("avatarJoin"); }
 
 function avatarJoin(id){
   id = (id||"").replace(/\s+/g, ""); // accept "123 456" or "123456"
-  if(!id){ $("aErr").textContent = "Indtast eller scan en kode."; return; }
+  if(!id){ $("aErr").textContent = "Enter or scan a code."; return; }
   show("avatarReady");
-  setStat(["aDot0"],["aStat0"],"wait","forbinder…");
+  setStat(["aDot0"],["aStat0"],"wait","connecting…");
   apeer = new Peer();
   apeer.on("open", () => {
     aconn = apeer.connect(id, { reliable:true });
-    aconn.on("open", () => setStat(["aDot0"],["aStat0"],"on","forbundet — tryk klar"));
+    aconn.on("open", () => setStat(["aDot0"],["aStat0"],"on","connected — tap ready"));
     aconn.on("data", onData);
-    aconn.on("close", () => setStat(["aDot"],["aStat"],"","afbrudt"));
+    aconn.on("close", () => setStat(["aDot"],["aStat"],"","disconnected"));
   });
   apeer.on("error", e => {
-    const msg = e.type === "peer-unavailable" ? "Ingen pilot fundet med den kode" : "fejl: " + e.type;
+    const msg = e.type === "peer-unavailable" ? "No pilot found with that code" : "error: " + e.type;
     setStat(["aDot0"],["aStat0"],"", msg);
   });
 }
@@ -306,7 +306,7 @@ function onData(m){
 function avatarStart(){
   unlockAudio();
   show("avatarRecv");
-  setStat(["aDot"],["aStat"],"on","forbundet");
+  setStat(["aDot"],["aStat"],"on","connected");
 }
 
 function unlockAudio(){
