@@ -121,7 +121,7 @@
   </div>
   <div class="credits">
     <div>© <a href="https://www.jakoblacour.com" target="_blank" rel="noopener noreferrer">Jakob la Cour Studio</a> 2014-<span id="yr"></span></div>
-    <div class="ver">Remastered: 260614-1622</div>
+    <div class="ver">Remastered: 260614-1631</div>
   </div>
 </section>
 
@@ -202,7 +202,7 @@
 <section id="avatarRecv" class="screen">
   <div class="top">
     <div class="topleft"><span class="dot on" id="aDot"></span><span class="status" id="aStat">connected</span></div>
-    <button class="muted-link" onclick="testCue()">test sound</button>
+    <button class="muted-link" onclick="testStatus()">test sound</button>
   </div>
   <div class="recv">
     <svg id="aEmblem" class="flash" width="120" height="120" viewBox="0 0 100 100" aria-hidden="true">
@@ -292,7 +292,7 @@ function send(cmd){
 }
 
 /* ---------------- AVATAR ---------------- */
-let apeer, aconn, audioUnlocked = false;
+let apeer, aconn, audioUnlocked = false, avatarConnected = false;
 const audioCache = {};
 
 function startAvatarManual(){ show("avatarJoin"); }
@@ -301,13 +301,13 @@ function avatarJoin(id){
   id = (id||"").replace(/\s+/g, ""); // accept "123 456" or "123456"
   if(!id){ $("aErr").textContent = "Enter or scan a code."; return; }
   show("avatarReady");
-  setStat(["aDot0"],["aStat0"],"wait","connecting…");
+  setStat(["aDot0"],["aStat0"],"wait","avatar connecting…");
   apeer = new Peer(undefined, { config: ICE });
   apeer.on("open", () => {
     aconn = apeer.connect(id, { reliable:true });
-    aconn.on("open", () => setStat(["aDot0"],["aStat0"],"on","connected — tap ready"));
+    aconn.on("open", () => { avatarConnected = true; setStat(["aDot0"],["aStat0"],"on","avatar connected — tap ready"); });
     aconn.on("data", onData);
-    aconn.on("close", () => setStat(["aDot"],["aStat"],"","disconnected"));
+    aconn.on("close", () => { avatarConnected = false; setStat(["aDot"],["aStat"],"","avatar disconnected"); });
   });
   apeer.on("error", e => {
     const msg = e.type === "peer-unavailable" ? "No pilot found with that code" : "error: " + e.type;
@@ -324,7 +324,7 @@ function onData(m){
 function avatarStart(){
   unlockAudio();
   show("avatarRecv");
-  setStat(["aDot"],["aStat"],"on","connected");
+  setStat(["aDot"],["aStat"],"on","avatar connected");
 }
 
 function unlockAudio(){
@@ -339,6 +339,13 @@ function unlockAudio(){
     audioCache[key] = a;
   });
   try{ const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); }catch(_){}
+  ["connected","disconnected"].forEach(f=>{
+    const key = "en/" + f;
+    const a = new Audio(`audio/${key}.mp3`);
+    a.preload = "auto"; a.volume = 0;
+    a.play().then(()=>{ a.pause(); a.currentTime = 0; a.volume = 1; }).catch(()=>{});
+    audioCache[key] = a;
+  });
 }
 
 const SPEAK = {
@@ -365,7 +372,17 @@ function speak(word){
   try{ const u = new SpeechSynthesisUtterance(word); u.lang = lang === "da" ? "da-DK" : "en-US"; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(_){}
 }
 function flash(){ const el = $("aEmblem"); el.style.opacity = "0.25"; requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.opacity = "1"; })); }
-function testCue(){ cue("forward", (SPEAK[lang]||SPEAK.da).forward); }
+function testStatus(){
+  const phrase = avatarConnected ? "avatar connected" : "avatar disconnected";
+  const file = avatarConnected ? "connected" : "disconnected";
+  $("aCmd").textContent = phrase;
+  flash();
+  const key = "en/" + file;
+  const a = audioCache[key] || new Audio(`audio/${key}.mp3`);
+  audioCache[key] = a;
+  a.currentTime = 0;
+  a.play().catch(()=>speak(phrase));
+}
 
 /* ---------------- shared ---------------- */
 function setStat(dots, stats, cls, txt){

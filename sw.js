@@ -1,11 +1,12 @@
 // Avatar Controller — minimal offline app shell.
 // The app itself loads offline; the live P2P link still needs a network for pairing/STUN.
-const CACHE = "avatar-controller-v11";
+const CACHE = "avatar-controller-v12";
 const CMDS = ["forward","backward","left","right","stop","shoot","pickup"];
 const LANGS = ["da","en"];
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icon.svg",
   "./vendor/peerjs.min.js", "./vendor/qrcode.js",
+  "./audio/en/connected.mp3", "./audio/en/disconnected.mp3",
   ...LANGS.flatMap(l => CMDS.map(c => `./audio/${l}/${c}.mp3`))
 ];
 
