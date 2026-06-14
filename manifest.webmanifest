@@ -1,0 +1,14 @@
+{
+  "name": "Avatar Controller",
+  "short_name": "Avatar",
+  "description": "Pilot-and-avatar controller for Avatar Controller Maze. Peer-to-peer, no server.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0d10",
+  "theme_color": "#0c0d10",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

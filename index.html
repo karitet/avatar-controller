@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0c0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Avatar Controller</title>
+<style>
+  :root{
+    --bg:#0c0d10; --surface:#1c1e23; --line:#2a2d33;
+    --txt:#e8eaed; --muted:#8a8f98; --green:#2ed12e; --green-dim:#5dca6a;
+    --amber:#f0b341; --red:#ff6b6b;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior:none; user-select:none;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .screen{display:none; min-height:100dvh; flex-direction:column;}
+  .screen.active{display:flex;}
+  .pad{padding:20px;}
+  h1{font-size:15px; letter-spacing:.16em; font-weight:500; margin:0;}
+  .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+  button{font-family:inherit; color:inherit; cursor:pointer; border:none; background:none;}
+  .big{width:100%; padding:18px; border-radius:14px; background:var(--surface); border:.5px solid var(--line);
+    color:var(--txt); font-size:16px; letter-spacing:.04em; display:flex; align-items:center; gap:14px; margin-top:12px; transition:transform .05s;}
+  .big:active{transform:scale(.985);}
+  .big .ico{width:34px; height:34px; flex:0 0 34px;}
+  input{width:100%; background:#0a0b0d; border:.5px solid var(--line); border-radius:10px; color:var(--green-dim);
+    font-family:ui-monospace,Menlo,monospace; font-size:14px; padding:12px; margin-top:8px;}
+  .row{display:flex; gap:10px; margin-top:10px;}
+  .btn{flex:1; padding:13px; border-radius:10px; background:var(--surface); border:.5px solid var(--line);
+    color:var(--txt); font-size:14px; letter-spacing:.04em; text-align:center; transition:transform .05s;}
+  .btn:active{transform:scale(.97);}
+  .btn.go{background:#10260f; border-color:#2f6d2f; color:var(--green-dim);}
+  .label{font-size:11px; letter-spacing:.1em; color:var(--muted); margin:18px 0 0;}
+  .status{display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.05em; color:var(--muted);}
+  .dot{width:9px; height:9px; border-radius:50%; background:#444; flex:0 0 9px;}
+  .dot.on{background:var(--green);} .dot.wait{background:var(--amber);}
+  .top{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:.5px solid var(--line);}
+  .topleft{display:flex; align-items:center; gap:12px;}
+  .err{color:var(--red); font-size:12px; margin-top:10px; min-height:14px;}
+
+  /* QR */
+  .qrwrap{display:flex; flex-direction:column; align-items:center; gap:14px; margin-top:22px;}
+  #qrBox{background:#fff; padding:14px; border-radius:14px; width:236px; height:236px; display:flex; align-items:center; justify-content:center;}
+  #qrBox svg{width:100%; height:100%; display:block;}
+  .roomid{font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--muted); letter-spacing:.05em;}
+
+  /* pilot joypad */
+  .play{flex:1; display:flex; flex-direction:column; justify-content:center; gap:26px; padding:24px 20px 32px;}
+  .dpad{display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,84px); gap:10px; max-width:340px; margin:0 auto; width:100%;}
+  .key{background:var(--surface); border:.5px solid var(--line); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; transition:transform .05s,background .1s;}
+  .key:active{transform:scale(.95); background:#23262c;}
+  .key svg{width:30px; height:30px; stroke:#cfd3d9;}
+  .key span{font-size:9px; letter-spacing:.06em; color:var(--muted);}
+  .hub{background:#101114; border:none; border-radius:50%; margin:18px;}
+  .actions{display:flex; align-items:center; justify-content:center; gap:14px; max-width:380px; margin:0 auto; width:100%;}
+  .act{display:flex; flex-direction:column; align-items:center; gap:6px; flex:1;}
+  .orb{width:100%; aspect-ratio:1; max-width:84px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:transform .05s;}
+  .orb:active{transform:scale(.94);}
+  .orb svg{width:32px; height:32px;}
+  .act .t{font-size:10px; letter-spacing:.08em; color:var(--muted);}
+  .orb.shoot{background:#2a2110; border:.5px solid #7a5a1c;} .orb.shoot svg{stroke:var(--amber);}
+  .orb.pick{background:#122312; border:.5px solid #2f6d2f;} .orb.pick svg{stroke:var(--green-dim);}
+  .orb.stop{background:#2a1416; border:1px solid #8a3030; max-width:96px;} .orb.stop svg{stroke:var(--red);}
+  .sep{width:.5px; align-self:stretch; background:var(--line); margin:14px 2px;}
+
+  /* avatar receiver */
+  .recv{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:24px; text-align:center;}
+  .recv .cmd{font-size:38px; font-weight:500; letter-spacing:.04em; min-height:46px;}
+  .recv .hint{font-size:13px; color:var(--muted); max-width:280px;}
+  .flash{transition:opacity .12s;}
+  .ready{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:24px; text-align:center;}
+  .startbtn{padding:20px 40px; border-radius:16px; background:#10260f; border:.5px solid #2f6d2f; color:var(--green-dim); font-size:18px; letter-spacing:.06em;}
+  select{background:var(--surface); color:var(--txt); border:.5px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:13px;}
+  .muted-link{color:var(--muted); font-size:12px; text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<!-- ROLE CHOOSER -->
+<section id="home" class="screen active pad">
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center; max-width:420px; margin:0 auto; width:100%;">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+      <svg width="44" height="44" viewBox="0 0 100 100" aria-hidden="true">
+        <rect x="6" y="6" width="88" height="88" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
+        <line x1="6" y1="6" x2="35" y2="35" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="6" x2="65" y2="35" stroke="#0a0a0a" stroke-width="7"/>
+        <line x1="6" y1="94" x2="35" y2="65" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="94" x2="65" y2="65" stroke="#0a0a0a" stroke-width="7"/>
+        <rect x="35" y="35" width="30" height="30" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
+      </svg>
+      <div><h1>AVATAR CONTROLLER</h1><div class="sub">vælg din rolle</div></div>
+    </div>
+    <button class="big" onclick="startPilot()">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#cfd3d9" stroke-width="1.6"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>
+      <div style="text-align:left"><div>Pilot</div><div class="sub">styrer avataren · viser QR</div></div>
+    </button>
+    <button class="big" onclick="startAvatarManual()">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#cfd3d9" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="1.5"/><path d="M5 5l4.5 4.5M19 5l-4.5 4.5M5 19l4.5-4.5M19 19l-4.5-4.5"/><rect x="9.5" y="9.5" width="5" height="5"/></svg>
+      <div style="text-align:left"><div>Avatar</div><div class="sub">scan pilotens QR, eller indtast kode</div></div>
+    </button>
+    <p class="sub" style="margin-top:22px; line-height:1.6;">Avataren scanner pilotens QR med telefonens kamera. Selve kommandoerne går peer-to-peer.</p>
+  </div>
+</section>
+
+<!-- PILOT: QR -->
+<section id="pilotPair" class="screen pad">
+  <div style="max-width:440px; margin:0 auto; width:100%;">
+    <div class="status"><span class="dot wait" id="pDot"></span><span id="pStat">opretter rum…</span></div>
+    <h1 style="margin-top:14px;">PILOT</h1>
+    <p class="sub" style="margin-top:6px;">Lad avataren scanne denne kode.</p>
+    <div class="qrwrap">
+      <div id="qrBox"></div>
+      <div class="roomid">kode: <span id="roomId">…</span></div>
+    </div>
+    <div class="err" id="pErr"></div>
+  </div>
+</section>
+
+<!-- PILOT: CONTROLLER -->
+<section id="pilotPlay" class="screen">
+  <div class="top">
+    <div class="topleft">
+      <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true">
+        <rect x="6" y="6" width="88" height="88" fill="#2ed12e" stroke="#0a0a0a" stroke-width="9"/>
+        <line x1="6" y1="6" x2="35" y2="35" stroke="#0a0a0a" stroke-width="8"/><line x1="94" y1="6" x2="65" y2="35" stroke="#0a0a0a" stroke-width="8"/>
+        <line x1="6" y1="94" x2="35" y2="65" stroke="#0a0a0a" stroke-width="8"/><line x1="94" y1="94" x2="65" y2="65" stroke="#0a0a0a" stroke-width="8"/>
+        <rect x="35" y="35" width="30" height="30" fill="#2ed12e" stroke="#0a0a0a" stroke-width="9"/>
+      </svg>
+      <div><div style="font-size:12px; letter-spacing:.12em;">PILOT</div><div class="sub" id="lastSent">—</div></div>
+    </div>
+    <div class="status"><span class="dot on" id="pDot2"></span><span id="pStat2">forbundet</span></div>
+  </div>
+  <div class="play">
+    <div class="dpad">
+      <div></div>
+      <button class="key" onpointerdown="send('forward')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 19V6M6 11l6-6 6 6"/></svg><span>FORWARD</span></button>
+      <div></div>
+      <button class="key" onpointerdown="send('left')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M19 12H6M11 6l-6 6 6 6"/></svg><span>LEFT</span></button>
+      <div class="hub"></div>
+      <button class="key" onpointerdown="send('right')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M5 12h13M13 6l6 6-6 6"/></svg><span>RIGHT</span></button>
+      <div></div>
+      <button class="key" onpointerdown="send('backward')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 5v13M6 13l6 6 6-6"/></svg><span>BACKWARD</span></button>
+      <div></div>
+    </div>
+    <div class="actions">
+      <div class="act"><span class="t">SHOOT</span><button class="orb shoot" onpointerdown="send('shoot')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button></div>
+      <div class="act"><span class="t">PICK UP</span><button class="orb pick" onpointerdown="send('pickup')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M7 11V7a2 2 0 1 1 4 0M11 11V6a2 2 0 1 1 4 0v5M15 9a2 2 0 1 1 4 0v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2.5-4a1.6 1.6 0 0 1 2.6-1.8L7 12"/></svg></button></div>
+      <div class="sep"></div>
+      <div class="act"><span class="t" style="color:var(--red)">STOP</span><button class="orb stop" onpointerdown="send('stop')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button></div>
+    </div>
+  </div>
+</section>
+
+<!-- AVATAR: MANUAL JOIN -->
+<section id="avatarJoin" class="screen pad">
+  <div style="max-width:440px; margin:0 auto; width:100%;">
+    <h1 style="margin-top:6px;">AVATAR</h1>
+    <p class="sub" style="margin-top:6px;">Scan pilotens QR med kameraet — eller indtast koden her.</p>
+    <p class="label">Pilotens kode</p>
+    <input id="joinId" placeholder="f.eks. 7fa3c1" autocapitalize="off" autocomplete="off">
+    <p class="label">Stemme</p>
+    <select id="lang">
+      <option value="da">Dansk</option>
+      <option value="en">English</option>
+    </select>
+    <div class="row"><button class="btn go" onclick="avatarJoin($('joinId').value)">Forbind</button></div>
+    <div class="err" id="aErr"></div>
+  </div>
+</section>
+
+<!-- AVATAR: READY GATE (unlock audio) -->
+<section id="avatarReady" class="screen">
+  <div class="ready">
+    <div class="status"><span class="dot wait" id="aDot0"></span><span id="aStat0">forbinder…</span></div>
+    <button class="startbtn" onclick="avatarStart()">Tryk når du er klar</button>
+    <p class="sub" style="max-width:260px;">Sæt øretelefoner i først. Tryk for at aktivere lyd.</p>
+  </div>
+</section>
+
+<!-- AVATAR: RECEIVER -->
+<section id="avatarRecv" class="screen">
+  <div class="top">
+    <div class="topleft"><span class="dot on" id="aDot"></span><span class="status" id="aStat">forbundet</span></div>
+    <button class="muted-link" onclick="testCue()">test lyd</button>
+  </div>
+  <div class="recv">
+    <svg id="aEmblem" class="flash" width="120" height="120" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="6" y="6" width="88" height="88" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
+      <line x1="6" y1="6" x2="35" y2="35" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="6" x2="65" y2="35" stroke="#0a0a0a" stroke-width="7"/>
+      <line x1="6" y1="94" x2="35" y2="65" stroke="#0a0a0a" stroke-width="7"/><line x1="94" y1="94" x2="65" y2="65" stroke="#0a0a0a" stroke-width="7"/>
+      <rect x="35" y="35" width="30" height="30" fill="#2ed12e" stroke="#0a0a0a" stroke-width="8"/>
+    </svg>
+    <div class="cmd" id="aCmd">venter…</div>
+    <div class="hint">Hold telefonen i lommen med øretelefoner i. Du hører instruktionerne og handler på dem.</div>
+  </div>
+</section>
+
+<script src="vendor/peerjs.min.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const show = id => { document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); };
+
+/* ---------------- PILOT ---------------- */
+let peer, conn;
+function startPilot(){
+  show("pilotPair");
+  peer = new Peer();
+  peer.on("open", id => {
+    $("roomId").textContent = id.slice(0,12);
+    const url = location.origin + location.pathname + "?join=" + encodeURIComponent(id);
+    renderQR(url);
+    setStat(["pDot"],["pStat"],"wait","venter på avatar…");
+  });
+  peer.on("connection", c => {
+    conn = c;
+    conn.on("open", () => { show("pilotPlay"); setStat(["pDot2"],["pStat2"],"on","forbundet"); });
+    conn.on("close", () => setStat(["pDot2"],["pStat2"],"","afbrudt"));
+  });
+  peer.on("error", e => { $("pErr").textContent = "Forbindelsesfejl: " + e.type; });
+}
+function renderQR(text){
+  const qr = qrcode(0, "M");
+  qr.addData(text);
+  qr.make();
+  $("qrBox").innerHTML = qr.createSvgTag({ cellSize: 5, margin: 1, scalable: true });
+}
+let lastTs = 0;
+function send(cmd){
+  if(!conn || !conn.open) return;
+  const now = Date.now();
+  if(now - lastTs < 60) return;
+  lastTs = now;
+  conn.send({ t:"cmd", c:cmd, ts:now });
+  $("lastSent").textContent = "sendt: " + cmd;
+  if(navigator.vibrate) navigator.vibrate(12);
+}
+
+/* ---------------- AVATAR ---------------- */
+let apeer, aconn, lang = "da", audioUnlocked = false;
+const audioCache = {};
+
+function startAvatarManual(){ show("avatarJoin"); }
+
+function avatarJoin(id){
+  id = (id||"").trim();
+  if(!id){ $("aErr").textContent = "Indtast eller scan en kode."; return; }
+  lang = ($("lang") && $("lang").value) || "da";
+  show("avatarReady");
+  setStat(["aDot0"],["aStat0"],"wait","forbinder…");
+  apeer = new Peer();
+  apeer.on("open", () => {
+    aconn = apeer.connect(id, { reliable:true });
+    aconn.on("open", () => setStat(["aDot0"],["aStat0"],"on","forbundet — tryk klar"));
+    aconn.on("data", onCmd);
+    aconn.on("close", () => setStat(["aDot"],["aStat"],"","afbrudt"));
+  });
+  apeer.on("error", e => { setStat(["aDot0"],["aStat0"],"","fejl: " + e.type); });
+}
+
+function avatarStart(){
+  unlockAudio();
+  show("avatarRecv");
+  setStat(["aDot"],["aStat"],"on","forbundet");
+}
+
+function unlockAudio(){
+  if(audioUnlocked) return;
+  audioUnlocked = true;
+  // prime each clip silently so playback is instant + iOS-unlocked
+  ["forward","backward","left","right","stop","shoot","pickup"].forEach(c=>{
+    const a = new Audio(`audio/${lang}/${c}.mp3`);
+    a.preload = "auto"; a.volume = 0;
+    a.play().then(()=>{ a.pause(); a.currentTime = 0; a.volume = 1; }).catch(()=>{});
+    audioCache[c] = a;
+  });
+  try{ const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); }catch(_){}
+}
+
+const SPEAK = {
+  da:{forward:"frem",backward:"tilbage",left:"venstre",right:"højre",stop:"stop",shoot:"skyd",pickup:"saml op"},
+  en:{forward:"forward",backward:"backward",left:"left",right:"right",stop:"stop",shoot:"shoot",pickup:"pick up"}
+};
+function onCmd(m){
+  if(!m || m.t !== "cmd") return;
+  const word = (SPEAK[lang]||SPEAK.da)[m.c] || m.c;
+  $("aCmd").textContent = word;
+  flash();
+  if(navigator.vibrate) navigator.vibrate(m.c === "stop" ? [80,40,80] : 60);
+  cue(m.c, word);
+}
+function cue(cmd, word){
+  // prefer the recorded file; fall back to speech synthesis
+  const a = audioCache[cmd] || new Audio(`audio/${lang}/${cmd}.mp3`);
+  audioCache[cmd] = a;
+  a.currentTime = 0;
+  a.play().catch(()=>speak(word));
+}
+function speak(word){
+  try{ const u = new SpeechSynthesisUtterance(word); u.lang = lang === "da" ? "da-DK" : "en-US"; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(_){}
+}
+function flash(){ const el = $("aEmblem"); el.style.opacity = "0.25"; requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.opacity = "1"; })); }
+function testCue(){ cue("forward", (SPEAK[lang]||SPEAK.da).forward); }
+
+/* ---------------- shared ---------------- */
+function setStat(dots, stats, cls, txt){
+  dots.forEach(d=>{ if($(d)) $(d).className = "dot " + cls; });
+  stats.forEach(s=>{ if($(s)) $(s).textContent = txt; });
+}
+
+/* deep-link: avatar arrives by scanning the pilot's QR */
+(function(){
+  const p = new URLSearchParams(location.search);
+  const join = p.get("join");
+  if(join){
+    lang = (p.get("lang")) || "da";
+    // jump straight to connecting as avatar
+    avatarJoin(join);
+  }
+})();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
