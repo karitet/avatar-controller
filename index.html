@@ -54,14 +54,20 @@
   .roomid{font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--muted); letter-spacing:.05em;}
 
   /* pilot joypad */
-  .play{flex:1; display:flex; flex-direction:column; justify-content:center; gap:26px; padding:24px 20px 32px;}
-  .dpad{display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,84px); gap:10px; max-width:340px; margin:0 auto; width:100%;}
+  .play{flex:1; display:flex; flex-direction:row; align-items:center; justify-content:space-evenly; gap:20px; padding:14px 24px 18px;}
+  .dpad{display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,76px); gap:10px; width:248px; flex:0 0 auto;}
   .key{background:var(--surface); border:.5px solid var(--line); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; transition:transform .05s,background .1s;}
   .key:active{transform:scale(.95); background:#23262c;}
   .key svg{width:30px; height:30px; stroke:#cfd3d9;}
   .key span{font-size:9px; letter-spacing:.06em; color:var(--muted);}
   .hub{background:#101114; border:none; border-radius:50%; margin:18px;}
-  .actions{display:flex; align-items:center; justify-content:center; gap:14px; max-width:380px; margin:0 auto; width:100%;}
+  .actions{display:flex; align-items:center; justify-content:center; gap:14px; flex:0 0 auto;}
+  .fsbtn{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); border:.5px solid var(--line); border-radius:8px; padding:6px 10px;}
+  .fsbtn svg{width:15px; height:15px; stroke:var(--muted); fill:none;}
+  .rotate{display:none; position:fixed; inset:0; background:var(--bg); z-index:50; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px;}
+  .rotate svg{width:54px; height:54px; stroke:var(--green-dim); fill:none;}
+  .rotate p{font-size:15px; letter-spacing:.04em; color:var(--txt); margin:0;}
+  @media (orientation:portrait){ #pilotPlay.active .rotate{display:flex;} }
   .act{display:flex; flex-direction:column; align-items:center; gap:6px; flex:1;}
   .orb{width:100%; aspect-ratio:1; max-width:84px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:transform .05s;}
   .orb:active{transform:scale(.94);}
@@ -97,7 +103,7 @@
       </svg>
       <div><h1>AVATAR CONTROLLER</h1><div class="sub">vælg din rolle</div></div>
     </div>
-    <button class="big" onclick="startPilot()">
+    <button class="big" onclick="goFS(); startPilot()">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#cfd3d9" stroke-width="1.6"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>
       <div style="text-align:left"><div>Pilot</div><div class="sub">styrer avataren · viser QR</div></div>
     </button>
@@ -135,7 +141,10 @@
       </svg>
       <div><div style="font-size:12px; letter-spacing:.12em;">PILOT</div><div class="sub" id="lastSent">—</div></div>
     </div>
-    <div class="status"><span class="dot on" id="pDot2"></span><span id="pStat2">forbundet</span></div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <button class="fsbtn" onclick="goFS()"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Fuldskærm</button>
+      <div class="status"><span class="dot on" id="pDot2"></span><span id="pStat2">forbundet</span></div>
+    </div>
   </div>
   <div class="play">
     <div class="dpad">
@@ -155,6 +164,10 @@
       <div class="sep"></div>
       <div class="act"><span class="t" style="color:var(--red)">STOP</span><button class="orb stop" onpointerdown="send('stop')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button></div>
     </div>
+  </div>
+  <div class="rotate">
+    <svg viewBox="0 0 24 24" stroke-width="1.6"><path d="M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M2 13a10 10 0 0 0 9 9"/></svg>
+    <p>Drej til vandret</p>
   </div>
 </section>
 
@@ -211,6 +224,12 @@ const show = id => { document.querySelectorAll(".screen").forEach(s=>s.classList
 
 /* ---------------- PILOT ---------------- */
 let peer, conn;
+function goFS(){
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+  try{ if(req) Promise.resolve(req.call(el)).catch(()=>{}); }catch(_){}
+  try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(()=>{}); }catch(_){}
+}
 function startPilot(tries){
   tries = tries || 0;
   show("pilotPair");
